@@ -1,50 +1,48 @@
-version: '3'
-
 services:
-  php:    
-    build:
-      context: ./vm/php
-      dockerfile: Dockerfile
-    image: php7.4-fpm-custom
-    container_name: ${APP_NAME}-php
+  app: # <-- You can name this whatever you want, but you will have to change the /vm/ngix/conf.d/default.conf
+    image: haroldcris/php8.2.4
+    container_name: php
     restart: unless-stopped
     volumes:
       - ./vm/php/local.ini:/usr/local/etc/php/conf.d/local.ini
-      - ./app:/var/www
+      - ./code:/var/www
+    #build:
+    #  context: ./vm/php
+    #  dockerfile: Dockerfile
 
-  webserver:
+
+  webserver:  # <-- You can name this whatever you want
     image: nginx
-    container_name: ${APP_NAME}-nginx
+    container_name: nginx
     restart: unless-stopped
-    depends_on: 
-      - php
     ports:
-      - 8000:80
-      - 443:443
+      - ${APP_PORT}:80
     volumes:
-      - ./vm/nginx/:/etc/nginx/conf.d/
-      - ./app:/var/www
+      - ./vm/nginx/conf.d:/etc/nginx/conf.d/
+      - ./code:/var/www
+      
 
-  adminer:
-    image: adminer
-    container_name: ${APP_NAME}-adminer
+
+  adminer: # <-- You can name this whatever you want
+    image: adminer:latest
+    container_name: adminer
     restart: unless-stopped
-    depends_on: 
-      - db
-    ports: 
-      - 8080:8080
-  
-  db:
+    ports:
+      - ${ADMINER_PORT}:8080
+
+
+
+  db: # <-- You can name this whatever you want, this will be the server name when accessing SQL from Adminer
     image: mariadb
-    container_name: ${APP_NAME}-mariadb
+    container_name: mariadb
     restart: unless-stopped
     environment:
       SERVICE_NAME: mariadb
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
       MYSQL_USER: ${DB_USERNAME}
       MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_DATABASE}
       TZ: Asia/Manila
     volumes:
-      - ./vm/mariadb/my.cnf:/etc/mysql/my.cnf
+      - ./vm/mysql/my.cnf:/etc/mysql/my.cnf
       - ./db:/var/lib/mysql
